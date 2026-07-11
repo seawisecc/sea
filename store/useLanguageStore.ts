@@ -8,6 +8,7 @@ export const dictionary = {
       pos: 'Kasir (POS)',
       inventory: 'Inventaris',
       customers: 'Pelanggan',
+      expenses: 'Pengeluaran',
       settings: 'Pengaturan',
       logout: 'Keluar Sistem',
       mainMenu: 'Menu Utama',
@@ -38,6 +39,22 @@ export const dictionary = {
       total: 'Total Tagihan',
       payNow: 'Bayar Sekarang',
       emptyCart: 'Keranjang Masih Kosong',
+    },
+    expenses: {
+      title: 'Arus Kas & Pengeluaran',
+      subtitle: 'Catat biaya operasional untuk menghitung laba rugi bersih',
+      addExpense: 'Catat Biaya Baru',
+      searchPlaceholder: 'Cari catatan pengeluaran...',
+      category: 'Kategori Biaya',
+      amount: 'Nominal (Rp)',
+      date: 'Tanggal Biaya',
+      description: 'Keterangan / Judul',
+      totalExpenses: 'Total Pengeluaran Recorded',
+      empty: 'Belum ada catatan pengeluaran.',
+      catOps: 'Operasional Toko',
+      catRaw: 'Bahan Baku / Stok',
+      catSalary: 'Gaji & Honor Staf',
+      catUtil: 'Listrik, Air & Internet',
     }
   },
   en: {
@@ -46,6 +63,7 @@ export const dictionary = {
       pos: 'Point of Sale (POS)',
       inventory: 'Inventory',
       customers: 'Customers',
+      expenses: 'Expenses',
       settings: 'Settings',
       logout: 'Sign Out',
       mainMenu: 'Main Menu',
@@ -76,6 +94,22 @@ export const dictionary = {
       total: 'Total Amount',
       payNow: 'Pay Now',
       emptyCart: 'Cart is Currently Empty',
+    },
+    expenses: {
+      title: 'Cash Flow & Expenses',
+      subtitle: 'Track operational costs to calculate accurate net profit',
+      addExpense: 'Record New Expense',
+      searchPlaceholder: 'Search expense records...',
+      category: 'Expense Category',
+      amount: 'Amount (IDR)',
+      date: 'Expense Date',
+      description: 'Description / Title',
+      totalExpenses: 'Total Recorded Expenses',
+      empty: 'No expense records found.',
+      catOps: 'Store Operations',
+      catRaw: 'Raw Materials / Stock',
+      catSalary: 'Staff Salary & Wages',
+      catUtil: 'Electricity, Water & Internet',
     }
   }
 }
@@ -97,10 +131,7 @@ export const useLanguageStore = create<LanguageState>()(
     }),
     { 
       name: 'sea-erp-lang-storage',
-      // ARSITEKTUR ANTI-STALE CACHE:
-      // 1. Partialize: Hanya simpan variabel 'lang' ke localStorage, abaikan 't'
       partialize: (state) => ({ lang: state.lang }),
-      // 2. Merge: Saat app dibuka, pasangkan 'lang' dari memori dengan kamus 't' terbaru dari kode
       merge: (persistedState: any, currentState) => ({
         ...currentState,
         lang: persistedState?.lang || currentState.lang,
