@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { useLanguageStore } from '@/store/useLanguageStore'
+import { useRoleStore } from '@/store/useRoleStore'
 import Link from 'next/link'
 import { 
   Store, 
@@ -15,13 +16,17 @@ import {
   LogOut, 
   Menu, 
   X,
-  Globe
+  Globe,
+  ShieldCheck,
+  Crown,
+  UserCheck
 } from 'lucide-react'
 
 interface NavItem {
   name: string
   href: string
   icon: React.ElementType
+  allowedRoles: ('owner' | 'cashier')[]
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -31,6 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const supabase = createClient()
   
   const { lang, setLang, t } = useLanguageStore()
+  const { role, setRole } = useRoleStore()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -38,16 +44,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh()
   }
 
+  // Definisi hak akses setiap menu (RBAC)
   const navigation: NavItem[] = [
-    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
-    { name: t.nav.pos, href: '/pos', icon: ShoppingCart },
-    { name: t.nav.inventory, href: '/inventory', icon: Package },
-    { name: t.nav.customers, href: '/customers', icon: Users },
-    { name: t.nav.settings, href: '/settings', icon: Settings },
+    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard, allowedRoles: ['owner'] }, // Hanya Owner
+    { name: t.nav.pos, href: '/pos', icon: ShoppingCart, allowedRoles: ['owner', 'cashier'] }, // Owner & Kasir
+    { name: t.nav.inventory, href: '/inventory', icon: Package, allowedRoles: ['owner', 'cashier'] }, // Owner & Kasir (tapi kasir read-only)
+    { name: t.nav.customers, href: '/customers', icon: Users, allowedRoles: ['owner', 'cashier'] }, // Owner & Kasir
+    { name: t.nav.settings, href: '/settings', icon: Settings, allowedRoles: ['owner'] }, // Hanya Owner
   ]
+
+  // Filter menu berdasarkan role yang sedang aktif
+  const filteredNav = navigation.filter(item => item.allowedRoles.includes(role))
 
   return (
     <div className="min-h-screen bg-[#F7F5F0] flex font-sans text-[#2C3E35]">
+      
+      {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-[#183022] text-[#E8EFEA] border-r border-[#102218] shadow-xl">
         <div className="h-20 flex items-center px-6 border-b border-[#234330]/60 gap-3">
           <div className="p-2.5 bg-[#2D5A41] rounded-xl text-[#F7F5F0] shadow-inner">
@@ -59,11 +71,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        {/* Banner Status Role Aktif */}
+        <div className="mx-4 mt-4 p-2.5 bg-[#14281C] border border-[#234330] rounded-xl flex items-center gap-2.5">
+          <div className={`p-1.5 rounded-lg ${role === 'owner' ? 'bg-[#F4EFE6] text-[#8C7A5B]' : 'bg-[#E8F3ED] text-[#2D5A41]'}`}>
+            {role === 'owner' ? <Crown size={16} /> : <UserCheck size={16} />}
+          </div>
+          <div className="overflow-hidden">
+            <span className="text-[10px] uppercase tracking-wider text-[#7A9C88] block font-bold">Akses Staf:</span>
+            <span className="text-xs font-extrabold text-[#F7F5F0] truncate block">
+              {role === 'owner' ? '👑 Pemilik (Owner)' : '🛒 Kasir (Staff)'}
+            </span>
+          </div>
+        </div>
+        
+        <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
           <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-[#7A9C88]">
             {t.nav.mainMenu}
           </div>
-          {navigation.map((item) => {
+          {filteredNav.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
@@ -83,31 +108,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        <div className="px-4 py-3 border-t border-[#234330]/60 flex items-center justify-between bg-[#14281C]">
+        {/* CONTROLLER 1: TOGGLE BAHASA */}
+        <div className="px-4 py-2 border-t border-[#234330]/60 flex items-center justify-between bg-[#14281C]">
           <div className="flex items-center gap-2 text-xs font-bold text-[#93B2A1]">
-            <Globe size={16} />
+            <Globe size={15} />
             <span>{t.nav.lang}</span>
           </div>
-          <div className="flex bg-[#234330] p-1 rounded-lg border border-[#2D5A41]">
-            <button
-              onClick={() => setLang('id')}
-              className={`px-2 py-1 rounded text-[11px] font-extrabold transition-all ${
-                lang === 'id' ? 'bg-[#F7F5F0] text-[#183022] shadow' : 'text-[#A8C3B3] hover:text-white'
-              }`}
-            >
-              ID
-            </button>
-            <button
-              onClick={() => setLang('en')}
-              className={`px-2 py-1 rounded text-[11px] font-extrabold transition-all ${
-                lang === 'en' ? 'bg-[#F7F5F0] text-[#183022] shadow' : 'text-[#A8C3B3] hover:text-white'
-              }`}
-            >
-              EN
-            </button>
+          <div className="flex bg-[#234330] p-0.5 rounded-lg border border-[#2D5A41]">
+            <button onClick={() => setLang('id')} className={`px-2 py-1 rounded text-[10px] font-extrabold transition-all ${lang === 'id' ? 'bg-[#F7F5F0] text-[#183022] shadow' : 'text-[#A8C3B3]'}`}>ID</button>
+            <button onClick={() => setLang('en')} className={`px-2 py-1 rounded text-[10px] font-extrabold transition-all ${lang === 'en' ? 'bg-[#F7F5F0] text-[#183022] shadow' : 'text-[#A8C3B3]'}`}>EN</button>
           </div>
         </div>
 
+        {/* CONTROLLER 2: SIMULATOR ROLE (KHUSUS TES DEMO) */}
+        <div className="px-4 py-2.5 border-t border-[#234330]/60 flex items-center justify-between bg-[#102016]">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#93B2A1]">
+            <ShieldCheck size={15} className="text-[#8C7A5B]" />
+            <span>Simulasi</span>
+          </div>
+          <div className="flex bg-[#234330] p-0.5 rounded-lg border border-[#2D5A41]">
+            <button onClick={() => setRole('owner')} className={`px-2 py-1 rounded text-[10px] font-extrabold transition-all ${role === 'owner' ? 'bg-[#8C7A5B] text-white shadow' : 'text-[#A8C3B3]'}`}>Owner</button>
+            <button onClick={() => setRole('cashier')} className={`px-2 py-1 rounded text-[10px] font-extrabold transition-all ${role === 'cashier' ? 'bg-[#2D5A41] text-white shadow' : 'text-[#A8C3B3]'}`}>Kasir</button>
+          </div>
+        </div>
+
+        {/* Tombol Logout */}
         <div className="p-4 border-t border-[#234330]/60">
           <button 
             onClick={handleLogout}
@@ -119,6 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
+      {/* Area Konten Utama */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="md:hidden bg-[#183022] text-white px-4 h-16 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2">
@@ -135,7 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#183022] text-[#E8EFEA] px-4 pt-2 pb-6 space-y-2 border-b border-[#234330] shadow-2xl z-50">
-            {navigation.map((item) => (
+            {filteredNav.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -149,11 +175,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             ))}
             
-            <div className="flex items-center justify-between px-4 py-3 bg-[#14281C] rounded-xl my-2">
-              <span className="text-sm font-bold text-[#93B2A1]">Language / Bahasa</span>
-              <div className="flex gap-2">
-                <button onClick={() => setLang('id')} className={`px-3 py-1 rounded-lg text-xs font-bold ${lang === 'id' ? 'bg-[#F7F5F0] text-[#183022]' : 'bg-[#234330] text-white'}`}>ID</button>
-                <button onClick={() => setLang('en')} className={`px-3 py-1 rounded-lg text-xs font-bold ${lang === 'en' ? 'bg-[#F7F5F0] text-[#183022]' : 'bg-[#234330] text-white'}`}>EN</button>
+            {/* Toggle Simulator Role & Bahasa di Mobile */}
+            <div className="grid grid-cols-2 gap-2 my-3 pt-2 border-t border-[#234330]">
+              <div className="bg-[#14281C] p-2.5 rounded-xl flex flex-col items-center">
+                <span className="text-[10px] text-[#7A9C88] font-bold mb-1">Bahasa</span>
+                <div className="flex gap-1">
+                  <button onClick={() => setLang('id')} className={`px-2.5 py-1 rounded text-xs font-bold ${lang === 'id' ? 'bg-[#F7F5F0] text-[#183022]' : 'bg-[#234330] text-white'}`}>ID</button>
+                  <button onClick={() => setLang('en')} className={`px-2.5 py-1 rounded text-xs font-bold ${lang === 'en' ? 'bg-[#F7F5F0] text-[#183022]' : 'bg-[#234330] text-white'}`}>EN</button>
+                </div>
+              </div>
+              <div className="bg-[#14281C] p-2.5 rounded-xl flex flex-col items-center">
+                <span className="text-[10px] text-[#7A9C88] font-bold mb-1">Simulasi Role</span>
+                <div className="flex gap-1">
+                  <button onClick={() => setRole('owner')} className={`px-2 py-1 rounded text-xs font-bold ${role === 'owner' ? 'bg-[#8C7A5B] text-white' : 'bg-[#234330] text-white'}`}>Owner</button>
+                  <button onClick={() => setRole('cashier')} className={`px-2 py-1 rounded text-xs font-bold ${role === 'cashier' ? 'bg-[#2D5A41] text-white' : 'bg-[#234330] text-white'}`}>Kasir</button>
+                </div>
               </div>
             </div>
 

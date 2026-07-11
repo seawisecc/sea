@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Package, Scissors, Plus, Search, Edit, Trash2, Loader2, X } from 'lucide-react'
+import { useRoleStore } from '@/store/useRoleStore'
+import { Package, Scissors, Plus, Search, Edit, Trash2, Loader2, X, ShieldAlert } from 'lucide-react'
 
 const formatRupiah = (number: number) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace(/\s+/g, '')
@@ -28,6 +29,7 @@ export default function InventoryPage() {
   const [formStock, setFormStock] = useState('')
 
   const supabase = createClient()
+  const { role } = useRoleStore() // Panggil status role saat ini
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -46,6 +48,10 @@ export default function InventoryPage() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (role !== 'owner') {
+      alert('Akses Ditolak: Hanya Pemilik (Owner) yang dapat menambah barang baru.')
+      return
+    }
     setIsSubmitting(true)
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -92,18 +98,36 @@ export default function InventoryPage() {
 
   return (
     <div className="p-6 h-full flex flex-col text-[#183022]">
+      
+      {/* Banner Peringatan untuk Kasir */}
+      {role === 'cashier' && (
+        <div className="mb-6 bg-[#F4EFE6] border border-[#8C7A5B]/40 rounded-2xl p-4 flex items-center gap-3 text-[#6A5A3C] shadow-sm animate-fade-in">
+          <div className="p-2 bg-[#8C7A5B] rounded-xl text-white flex-shrink-0">
+            <ShieldAlert size={20} />
+          </div>
+          <div className="text-xs leading-relaxed">
+            <span className="font-bold block text-sm text-[#183022]">Mode Hanya Baca (Staf Kasir)</span>
+            Anda dapat melihat daftar katalog dan mengecek sisa stok barang, namun penambahan, pengubahan harga, atau penghapusan item dikunci khusus untuk <strong>Pemilik (Owner)</strong>.
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-[#183022]">Inventaris & Katalog</h1>
           <p className="text-sm text-[#6B8275] mt-1">Kelola master data barang dan layanan jasa</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-[#183022] hover:bg-[#234330] text-[#F7F5F0] px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-md hover:shadow-lg text-sm"
-        >
-          <Plus size={18} />
-          <span>Tambah Item</span>
-        </button>
+        
+        {/* Tombol Tambah Item HANYA MUNCUL JIKA ROLE === 'OWNER' */}
+        {role === 'owner' && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[#183022] hover:bg-[#234330] text-[#F7F5F0] px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-md hover:shadow-lg text-sm"
+          >
+            <Plus size={18} />
+            <span>Tambah Item</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-[#FFFFFF] border border-[#EAE5DA] rounded-3xl shadow-sm flex-1 flex flex-col overflow-hidden">
@@ -138,7 +162,7 @@ export default function InventoryPage() {
                 {products.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-16 text-center text-[#A4B5AC] text-sm font-medium">
-                      Katalog kosong. Silakan klik tombol "+ Tambah Item" di atas.
+                      Katalog kosong.
                     </td>
                   </tr>
                 ) : (
@@ -167,8 +191,15 @@ export default function InventoryPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-[#A4B5AC] hover:text-[#2D5A41] p-1 mr-2 transition-colors"><Edit size={18} /></button>
-                        <button className="text-[#A4B5AC] hover:text-[#D37A74] p-1 transition-colors"><Trash2 size={18} /></button>
+                        {/* KUNCI AKSI JIKA ROLE BUKAN OWNER */}
+                        {role === 'owner' ? (
+                          <>
+                            <button className="text-[#A4B5AC] hover:text-[#2D5A41] p-1 mr-2 transition-colors"><Edit size={18} /></button>
+                            <button className="text-[#A4B5AC] hover:text-[#D37A74] p-1 transition-colors"><Trash2 size={18} /></button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-[#A4B5AC] font-semibold italic">Terkunci</span>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -179,8 +210,8 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Modal Form Tambah Data ala Luxury Minimalist */}
-      {isModalOpen && (
+      {/* Modal Form Tambah Data (Hanya Owner) */}
+      {isModalOpen && role === 'owner' && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#FFFFFF] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-[#EAE5DA] flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-6 border-b border-[#EAE5DA] bg-[#FCFBF9]">
@@ -229,6 +260,7 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
