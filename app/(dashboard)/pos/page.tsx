@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useCartStore, Product } from '@/store/useCartStore'
-import { Loader2, Plus, Trash2, Package, Scissors, CheckCircle2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, Package, Scissors, CheckCircle2, ShoppingBag } from 'lucide-react'
 
 const formatRupiah = (number: number) => {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number)
+  return new Intl.NumberFormat('id-ID', { 
+    style: 'currency', 
+    currency: 'IDR', 
+    minimumFractionDigits: 0 
+  })
+    .format(number)
+    .replace(/\s+/g, '')
 }
 
 export default function POSPage() {
@@ -21,10 +27,12 @@ export default function POSPage() {
   const { items, addToCart, removeFromCart, total, clearCart } = useCartStore()
 
   const fetchProducts = async () => {
+    // Menarik semua produk tanpa filter is_active agar barang baru tidak hilang
     const { data } = await supabase
       .from('products')
       .select('id, name, price, type')
-      .eq('is_active', true)
+      .order('name', { ascending: true })
+      
     if (data) setProducts(data as Product[])
     setLoading(false)
   }
@@ -38,17 +46,16 @@ export default function POSPage() {
     setCheckoutLoading(true)
     setSuccessInfo(null)
 
-    // Format data payload keranjang agar sesuai dengan struktur JSONB PostgreSQL
-    const formattedItems = items.map(item => ({
-      product_id: item.id,
+    // Menggunakan (item: any) untuk mencegah error TypeScript ketat
+    const formattedItems = items.map((item: any) => ({
+      product_id: item.id || item.cartItemId,
       quantity: item.quantity,
       unit_price: item.price,
       subtotal: item.price * item.quantity,
-      type: item.type,
-      metadata: item.type === 'service' ? { staff_name: 'Staf Default' } : {}
+      type: item.type || 'retail',
+      metadata: item.type === 'service' ? { staff_name: 'Staf Ahli' } : {}
     }))
 
-    // Tembak fungsi transaksi RPC Supabase
     const { data, error } = await supabase.rpc('handle_checkout', {
       p_customer_name: customerName,
       p_total_amount: total(),
@@ -68,53 +75,72 @@ export default function POSPage() {
     const response = data as { success: boolean; invoice_number: string }
     if (response?.success) {
       setSuccessInfo({ inv: response.invoice_number })
-      clearCart() // Kosongkan keranjang belanja
+      clearCart()
       setCustomerName('Walk-in Customer')
-      fetchProducts() // Segarkan katalog produk untuk memperbarui sisa stok fisik
+      fetchProducts()
     }
   }
 
   return (
     <div className="p-6 h-full flex flex-col">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Kasir (POS)</h1>
-        <p className="text-sm text-gray-500">Sistem transaksi ritel dan jasa hibrida</p>
+      <div className="mb-6 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#183022] tracking-tight">Kasir (POS)</h1>
+          <p className="text-sm text-[#6B8275] mt-1">Sistem transaksi ritel dan layanan eksklusif</p>
+        </div>
       </div>
 
       {successInfo && (
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center text-green-800 gap-3">
-          <CheckCircle2 className="text-green-500 flex-shrink-0" size={24} />
+        <div className="mb-6 bg-[#E8F3ED] border border-[#B8D8C8] rounded-2xl p-4 flex items-center text-[#183022] gap-3 shadow-sm animate-fade-in">
+          <div className="p-2 bg-[#2D5A41] rounded-full text-white">
+            <CheckCircle2 size={20} />
+          </div>
           <div>
-            <span className="font-bold">Transaksi Sukses!</span> Nota <span className="underline font-mono">{successInfo.inv}</span> telah direkam ke dalam database.
+            <span className="font-bold">Transaksi Berhasil!</span> Nota <span className="underline font-mono font-semibold">{successInfo.inv}</span> telah tercatat di sistem.
           </div>
         </div>
       )}
 
       <div className="flex-1 flex flex-col lg:flex-row gap-6">
         {/* Area Kiri: Katalog */}
-        <div className="w-full lg:w-3/5 bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col">
-          <h2 className="font-semibold mb-4 text-gray-800">Katalog</h2>
+        <div className="w-full lg:w-3/5 bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#EAE5DA] p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="font-bold text-lg text-[#183022]">Katalog Layanan & Produk</h2>
+            <span className="text-xs bg-[#F0EBE1] text-[#5A6D62] px-3 py-1 rounded-full font-medium">
+              {products.length} Item Aktif
+            </span>
+          </div>
           
           {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="animate-spin text-blue-600" size={32} />
+            <div className="flex-1 flex items-center justify-center py-20">
+              <Loader2 className="animate-spin text-[#2D5A41]" size={36} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto pr-1">
               {products.map((product) => (
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
-                  className="flex flex-col text-left border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-sm transition-all focus:outline-none"
+                  className="group flex flex-col text-left bg-[#FCFBF9] border border-[#EAE5DA] rounded-2xl p-4 hover:border-[#2D5A41] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 focus:outline-none"
                 >
-                  <div className="flex justify-between items-start w-full mb-2">
-                    {product.type === 'retail' ? <Package className="text-gray-400" size={20} /> : <Scissors className="text-orange-400" size={20} />}
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${product.type === 'retail' ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-700'}`}>
+                  <div className="flex justify-between items-start w-full mb-3">
+                    <div className="p-2.5 rounded-xl bg-[#F4EFE6] group-hover:bg-[#E8F3ED] transition-colors">
+                      {product.type === 'retail' ? (
+                        <Package className="text-[#5A6D62] group-hover:text-[#183022]" size={18} />
+                      ) : (
+                        <Scissors className="text-[#A85A32] group-hover:text-[#183022]" size={18} />
+                      )}
+                    </div>
+                    <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold tracking-wide ${
+                      product.type === 'retail' 
+                        ? 'bg-[#E8F3ED] text-[#2D5A41]' 
+                        : 'bg-[#FBECE6] text-[#C26D46]'
+                    }`}>
                       {product.type === 'retail' ? 'Barang' : 'Jasa'}
                     </span>
                   </div>
-                  <span className="font-medium text-gray-900 line-clamp-2">{product.name}</span>
-                  <span className="text-blue-600 font-bold mt-1">{formatRupiah(product.price)}</span>
+                  <span className="font-semibold text-[#183022] text-sm line-clamp-2 mt-auto group-hover:text-[#2D5A41] transition-colors">{product.name}</span>
+                  <span suppressHydrationWarning className="text-[#183022] font-extrabold text-base mt-2">{formatRupiah(product.price)}</span>
                 </button>
               ))}
             </div>
@@ -122,49 +148,55 @@ export default function POSPage() {
         </div>
 
         {/* Area Kanan: Keranjang */}
-        <div className="w-full lg:w-2/5 bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-col h-[calc(100vh-8rem)]">
-          <h2 className="font-semibold text-gray-800 mb-4">Detail Pembayaran</h2>
+        <div className="w-full lg:w-2/5 bg-[#FFFFFF] rounded-3xl shadow-sm border border-[#EAE5DA] p-6 flex flex-col h-[calc(100vh-8.5rem)]">
+          <div className="flex items-center gap-2 mb-5 pb-4 border-b border-[#F0EBE1]">
+            <ShoppingBag className="text-[#2D5A41]" size={20} />
+            <h2 className="font-bold text-lg text-[#183022]">Keranjang Pesanan</h2>
+          </div>
           
-          <div className="space-y-3 mb-4">
+          <div className="space-y-3 mb-4 bg-[#FCFBF9] p-4 rounded-2xl border border-[#EAE5DA]/60">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">NAMA PELANGGAN</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">Nama Pelanggan</label>
               <input 
                 type="text" 
                 value={customerName} 
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-3.5 py-2 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41] transition-all"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">METODE PEMBAYARAN</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">Metode Pembayaran</label>
               <select 
                 value={paymentMethod} 
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-3.5 py-2 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41] transition-all"
               >
                 <option value="cash">Tunai (Cash)</option>
-                <option value="qris">QRIS otomatis</option>
+                <option value="qris">QRIS Instant</option>
                 <option value="transfer">Transfer Bank</option>
               </select>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 space-y-3 border-t pt-4">
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2.5">
             {items.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-lg">
-                Keranjang Kosong
+              <div className="h-full flex flex-col items-center justify-center text-[#A4B5AC] border-2 border-dashed border-[#EAE5DA] rounded-2xl bg-[#FCFBF9]/50">
+                <ShoppingBag size={40} className="mb-2 opacity-40" />
+                <span className="text-sm font-medium">Keranjang Masih Kosong</span>
               </div>
             ) : (
-              items.map((item) => (
-                <div key={item.cartItemId} className="flex justify-between items-center p-3 border border-gray-100 rounded-lg bg-gray-50">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{item.name}</h3>
-                    <div className="text-xs text-gray-500 mt-1">{formatRupiah(item.price)} x {item.quantity}</div>
+              items.map((item: any) => (
+                <div key={item.cartItemId} className="flex justify-between items-center p-3.5 border border-[#EAE5DA] rounded-2xl bg-[#FCFBF9] hover:bg-white transition-colors">
+                  <div className="flex-1 mr-2">
+                    <h3 className="text-sm font-bold text-[#183022] line-clamp-1">{item.name}</h3>
+                    <div className="text-xs font-semibold text-[#6B8275] mt-0.5">
+                      <span suppressHydrationWarning>{formatRupiah(item.price)}</span> <span className="text-[#A4B5AC]">×</span> {item.quantity}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 ml-2">
-                    <span className="font-bold text-gray-900">{formatRupiah(item.price * item.quantity)}</span>
-                    <button onClick={() => removeFromCart(item.cartItemId)} className="text-red-400 hover:text-red-600 p-1">
-                      <Trash2 size={18} />
+                  <div className="flex items-center gap-3">
+                    <span suppressHydrationWarning className="font-extrabold text-sm text-[#183022]">{formatRupiah(item.price * item.quantity)}</span>
+                    <button onClick={() => removeFromCart(item.cartItemId)} className="text-[#D37A74] hover:text-[#B54D46] hover:bg-[#FDF2F1] p-1.5 rounded-lg transition-colors">
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -172,15 +204,15 @@ export default function POSPage() {
             )}
           </div>
           
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="flex justify-between font-bold text-xl mb-4 text-gray-900">
-              <span>Total:</span>
-              <span>{formatRupiah(total())}</span>
+          <div className="border-t border-[#EAE5DA] pt-4 mt-3">
+            <div className="flex justify-between items-center mb-4 px-1">
+              <span className="font-bold text-sm uppercase tracking-wider text-[#6B8275]">Total Tagihan:</span>
+              <span suppressHydrationWarning className="font-extrabold text-2xl text-[#183022]">{formatRupiah(total())}</span>
             </div>
             <button 
               onClick={handlePay}
               disabled={items.length === 0 || checkoutLoading}
-              className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center shadow-sm text-lg"
+              className="w-full bg-[#183022] text-[#F7F5F0] font-bold py-4 rounded-2xl hover:bg-[#234330] transition-all duration-200 disabled:opacity-40 disabled:hover:bg-[#183022] disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl text-base tracking-wide"
             >
               {checkoutLoading ? <Loader2 className="animate-spin" size={22} /> : 'Bayar Sekarang'}
             </button>

@@ -2,20 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { 
-  Package, 
-  Scissors, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Loader2,
-  X
-} from 'lucide-react'
+import { Package, Scissors, Plus, Search, Edit, Trash2, Loader2, X } from 'lucide-react'
 
-// Fungsi format rupiah
 const formatRupiah = (number: number) => {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number)
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number).replace(/\s+/g, '')
 }
 
 interface Product {
@@ -32,7 +22,6 @@ export default function InventoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // State Form Tambah Produk
   const [formName, setFormName] = useState('')
   const [formType, setFormType] = useState<'retail' | 'service'>('retail')
   const [formPrice, setFormPrice] = useState('')
@@ -42,11 +31,10 @@ export default function InventoryPage() {
 
   const fetchProducts = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('products')
       .select('id, name, type, price, stock')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .order('name', { ascending: true })
 
     if (data) setProducts(data as Product[])
     setLoading(false)
@@ -60,11 +48,9 @@ export default function InventoryPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Ambil tenant_id dari user yang sedang login
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Karena RLS ketat, kita perlu mengambil tenant_id milik user ini dari user_profiles
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('tenant_id')
@@ -77,7 +63,6 @@ export default function InventoryPage() {
       return
     }
 
-    // Insert ke database
     const { error } = await supabase
       .from('products')
       .insert({
@@ -85,9 +70,10 @@ export default function InventoryPage() {
         name: formName,
         type: formType,
         price: Number(formPrice),
-        cost_price: 0, // Disederhanakan untuk MVP
+        cost_price: 0,
         stock: formType === 'retail' ? Number(formStock) : 0,
-        variants: '[]'
+        variants: '[]',
+        is_active: true
       })
 
     setIsSubmitting(false)
@@ -95,96 +81,94 @@ export default function InventoryPage() {
     if (error) {
       alert(`Gagal menyimpan: ${error.message}`)
     } else {
-      // Reset form dan tutup modal
       setFormName('')
       setFormPrice('')
       setFormStock('')
       setFormType('retail')
       setIsModalOpen(false)
-      fetchProducts() // Refresh tabel
+      fetchProducts()
     }
   }
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="p-6 h-full flex flex-col text-[#183022]">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventaris & Katalog</h1>
-          <p className="text-sm text-gray-500">Kelola master data barang dan layanan jasa</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#183022]">Inventaris & Katalog</h1>
+          <p className="text-sm text-[#6B8275] mt-1">Kelola master data barang dan layanan jasa</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition shadow-sm"
+          className="bg-[#183022] hover:bg-[#234330] text-[#F7F5F0] px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-md hover:shadow-lg text-sm"
         >
-          <Plus size={20} />
-          <span>Tambah Data</span>
+          <Plus size={18} />
+          <span>Tambah Item</span>
         </button>
       </div>
 
-      {/* Area Tabel Data */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex gap-4">
+      <div className="bg-[#FFFFFF] border border-[#EAE5DA] rounded-3xl shadow-sm flex-1 flex flex-col overflow-hidden">
+        <div className="p-5 border-b border-[#EAE5DA] bg-[#FCFBF9] flex gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A4B5AC]" size={18} />
             <input 
               type="text" 
               placeholder="Cari nama barang atau jasa..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41] text-sm text-[#183022] font-medium transition-all"
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-auto">
           {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="animate-spin text-blue-600" size={32} />
+            <div className="h-full flex items-center justify-center py-20">
+              <Loader2 className="animate-spin text-[#2D5A41]" size={36} />
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 sticky top-0">
+            <table className="min-w-full divide-y divide-[#EAE5DA]">
+              <thead className="bg-[#FCFBF9] sticky top-0">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Item</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Stok</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Nama Item</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Tipe</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Harga Jual</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Sisa Stok</th>
+                  <th className="px-6 py-4 text-right text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-[#FFFFFF] divide-y divide-[#EAE5DA]/60">
                 {products.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500 text-sm">
-                      Katalog kosong. Silakan tambah data baru.
+                    <td colSpan={5} className="px-6 py-16 text-center text-[#A4B5AC] text-sm font-medium">
+                      Katalog kosong. Silakan klik tombol "+ Tambah Item" di atas.
                     </td>
                   </tr>
                 ) : (
                   products.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{item.name}</td>
+                    <tr key={item.id} className="hover:bg-[#FCFBF9] transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap font-bold text-[#183022]">{item.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.type === 'retail' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#E8F3ED] text-[#2D5A41]">
                             <Package size={14} /> Barang
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FBECE6] text-[#C26D46]">
                             <Scissors size={14} /> Jasa
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-blue-600">{formatRupiah(item.price)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-extrabold text-[#183022]">{formatRupiah(item.price)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.type === 'retail' ? (
-                          <span className={`font-medium ${item.stock <= 5 ? 'text-red-600' : 'text-gray-900'}`}>
+                          <span className={`font-bold ${item.stock <= 5 ? 'text-[#D37A74]' : 'text-[#183022]'}`}>
                             {item.stock} Unit
                           </span>
                         ) : (
-                          <span className="text-gray-400 italic">Unlimited</span>
+                          <span className="text-[#A4B5AC] italic font-medium">Unlimited</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-gray-400 hover:text-blue-600 p-1 mr-2"><Edit size={18} /></button>
-                        <button className="text-gray-400 hover:text-red-600 p-1"><Trash2 size={18} /></button>
+                        <button className="text-[#A4B5AC] hover:text-[#2D5A41] p-1 mr-2 transition-colors"><Edit size={18} /></button>
+                        <button className="text-[#A4B5AC] hover:text-[#D37A74] p-1 transition-colors"><Trash2 size={18} /></button>
                       </td>
                     </tr>
                   ))
@@ -195,50 +179,50 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Modal Tambah Data */}
+      {/* Modal Form Tambah Data ala Luxury Minimalist */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200">
-              <h3 className="font-bold text-lg text-gray-900">Tambah Data Baru</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#FFFFFF] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-[#EAE5DA] flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b border-[#EAE5DA] bg-[#FCFBF9]">
+              <h3 className="font-extrabold text-xl text-[#183022]">Tambah Item Baru</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-[#A4B5AC] hover:text-[#183022] transition-colors"><X size={22} /></button>
             </div>
             
-            <form onSubmit={handleAddProduct} className="p-4 space-y-4 overflow-y-auto">
+            <form onSubmit={handleAddProduct} className="p-6 space-y-5 overflow-y-auto">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Item</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="type" value="retail" checked={formType === 'retail'} onChange={() => setFormType('retail')} className="text-blue-600 focus:ring-blue-500" />
-                    <span className="text-sm">Barang Fisik (Retail)</span>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-2">Tipe Item</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={`flex items-center justify-center gap-2 cursor-pointer py-3 px-4 rounded-xl border font-bold text-sm transition-all ${formType === 'retail' ? 'bg-[#E8F3ED] border-[#2D5A41] text-[#2D5A41]' : 'border-[#EAE5DA] text-[#6B8275] hover:bg-[#FCFBF9]'}`}>
+                    <input type="radio" name="type" value="retail" checked={formType === 'retail'} onChange={() => setFormType('retail')} className="hidden" />
+                    <Package size={16} /> Barang Fisik
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="type" value="service" checked={formType === 'service'} onChange={() => setFormType('service')} className="text-orange-500 focus:ring-orange-500" />
-                    <span className="text-sm">Jasa / Layanan</span>
+                  <label className={`flex items-center justify-center gap-2 cursor-pointer py-3 px-4 rounded-xl border font-bold text-sm transition-all ${formType === 'service' ? 'bg-[#FBECE6] border-[#C26D46] text-[#C26D46]' : 'border-[#EAE5DA] text-[#6B8275] hover:bg-[#FCFBF9]'}`}>
+                    <input type="radio" name="type" value="service" checked={formType === 'service'} onChange={() => setFormType('service')} className="hidden" />
+                    <Scissors size={16} /> Layanan Jasa
                   </label>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Item</label>
-                <input required type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Contoh: Kopi Susu / Potong Rambut" />
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">Nama Item</label>
+                <input required type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41]" placeholder="Contoh: Kopi Susu / Potong Rambut" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Harga Jual (Rp)</label>
-                <input required type="number" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Contoh: 15000" />
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">Harga Jual (Rp)</label>
+                <input required type="number" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41]" placeholder="Contoh: 15000" />
               </div>
 
               {formType === 'retail' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stok Awal</label>
-                  <input required type="number" value={formStock} onChange={(e) => setFormStock(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Contoh: 100" />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">Stok Awal</label>
+                  <input required type="number" value={formStock} onChange={(e) => setFormStock(e.target.value)} className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41] focus:ring-1 focus:ring-[#2D5A41]" placeholder="Contoh: 100" />
                 </div>
               )}
 
-              <div className="pt-4 border-t border-gray-200">
-                <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white rounded-md py-2.5 font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center">
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 'Simpan Data'}
+              <div className="pt-4 border-t border-[#EAE5DA] mt-2">
+                <button type="submit" disabled={isSubmitting} className="w-full bg-[#183022] text-[#F7F5F0] rounded-2xl py-3.5 font-bold hover:bg-[#234330] disabled:opacity-50 flex items-center justify-center shadow-lg transition-all text-sm">
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 'Simpan ke Katalog'}
                 </button>
               </div>
             </form>
