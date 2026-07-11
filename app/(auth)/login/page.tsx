@@ -148,7 +148,7 @@ export default function LoginPage() {
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6B8275] mb-1">{t.auth.fullName}</label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A4B5AC]" size={16} />
-                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Agus Yulyastrawan" className="w-full pl-9 pr-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nama" className="w-full pl-9 pr-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
                 </div>
               </div>
 
@@ -156,7 +156,7 @@ export default function LoginPage() {
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-[#6B8275] mb-1">{t.auth.companyName}</label>
                 <div className="relative">
                   <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A4B5AC]" size={16} />
-                  <input required type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="PT Damar Nubio / Bali Spa" className="w-full pl-9 pr-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
+                  <input required type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Nama Usaha" className="w-full pl-9 pr-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
                 </div>
               </div>
 
@@ -250,11 +250,11 @@ export default function LoginPage() {
           <form onSubmit={handleSignUp} className="space-y-3 animate-fade-in">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1">{t.auth.fullName}</label>
-              <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Agus Yulyastrawan" className="w-full px-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
+              <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Name" className="w-full px-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1">{t.auth.companyName}</label>
-              <input required type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="PT Damar Nubio" className="w-full px-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
+              <input required type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company Name" className="w-full px-3 py-2.5 bg-[#FCFBF9] border border-[#EAE5DA] rounded-xl text-xs font-medium focus:outline-none focus:border-[#2D5A41]" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1">{t.auth.email}</label>

@@ -30,7 +30,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const supabase = createClient()
   
-  // Panggil Engine Bahasa
   const { lang, setLang, t } = useLanguageStore()
 
   const handleLogout = async () => {
@@ -49,7 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-[#F7F5F0] flex font-sans text-[#2C3E35]">
-      {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-[#183022] text-[#E8EFEA] border-r border-[#102218] shadow-xl">
         <div className="h-20 flex items-center px-6 border-b border-[#234330]/60 gap-3">
           <div className="p-2.5 bg-[#2D5A41] rounded-xl text-[#F7F5F0] shadow-inner">
@@ -85,7 +83,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* TOMBOL TOGGLE BAHASA DALAM SIDEBAR */}
         <div className="px-4 py-3 border-t border-[#234330]/60 flex items-center justify-between bg-[#14281C]">
           <div className="flex items-center gap-2 text-xs font-bold text-[#93B2A1]">
             <Globe size={16} />
@@ -111,7 +108,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Tombol Logout */}
         <div className="p-4 border-t border-[#234330]/60">
           <button 
             onClick={handleLogout}
@@ -123,7 +119,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Area Konten Utama */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="md:hidden bg-[#183022] text-white px-4 h-16 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2">
@@ -154,7 +149,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             ))}
             
-            {/* Toggle Bahasa versi Mobile Menu */}
             <div className="flex items-center justify-between px-4 py-3 bg-[#14281C] rounded-xl my-2">
               <span className="text-sm font-bold text-[#93B2A1]">Language / Bahasa</span>
               <div className="flex gap-2">
