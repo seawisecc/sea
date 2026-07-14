@@ -55,21 +55,43 @@ export default function POSPage() {
   const { t } = useLanguageStore()
 
   const fetchProducts = async () => {
-    setLoading(true)
-    setErrorMessage(null)
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('name', { ascending: true })
-      
-    if (error) {
-      console.error('Supabase Query Error:', error)
-      setErrorMessage(`Gagal memuat katalog: ${error.message}`)
-    } else if (data) {
-      setProducts(data as Product[])
-    }
+  setLoading(true)
+  setErrorMessage(null)
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    setProducts([])
     setLoading(false)
+    return
   }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.tenant_id) {
+    setProducts([])
+    setLoading(false)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('tenant_id', profile.tenant_id)
+    .order('name', { ascending: true })
+    
+  if (error) {
+    console.error('Supabase Query Error:', error)
+    setErrorMessage(`Gagal memuat katalog: ${error.message}`)
+  } else if (data) {
+    setProducts(data as Product[])
+  }
+  setLoading(false)
+}
 
   useEffect(() => {
     fetchProducts()

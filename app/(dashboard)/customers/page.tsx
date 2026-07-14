@@ -25,9 +25,30 @@ export default function CustomersPage() {
 
   const fetchCustomers = async () => {
     setLoading(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setCustomers([])
+      setLoading(false)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.tenant_id) {
+      setCustomers([])
+      setLoading(false)
+      return
+    }
+
     const { data } = await supabase
       .from('customers')
       .select('*')
+      .eq('tenant_id', profile.tenant_id)
       .order('created_at', { ascending: false })
 
     if (data) setCustomers(data as Customer[])
@@ -43,27 +64,36 @@ export default function CustomersPage() {
     setIsSubmitting(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setIsSubmitting(false)
+      return
+    }
 
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('tenant_id')
       .eq('id', user.id)
       .single()
 
-    if (profile) {
-      await supabase.from('customers').insert({
+    if (profile?.tenant_id) {
+      const { error } = await supabase.from('customers').insert({
         tenant_id: profile.tenant_id,
         name: formName,
         phone: formPhone,
         email: formEmail
       })
-      
-      setIsModalOpen(false)
-      setFormName('')
-      setFormPhone('')
-      setFormEmail('')
-      fetchCustomers()
+
+      if (error) {
+        alert('Gagal menyimpan pelanggan: ' + error.message)
+      } else {
+        setIsModalOpen(false)
+        setFormName('')
+        setFormPhone('')
+        setFormEmail('')
+        fetchCustomers()
+      }
+    } else {
+      alert('Tenant tidak ditemukan. Silakan login ulang.')
     }
     setIsSubmitting(false)
   }
