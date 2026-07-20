@@ -51,7 +51,7 @@ export default function ExpensesPage() {
 
   const supabase = createClient()
   const { t } = useLanguageStore()
-  const { role } = useRoleStore()
+  const { role, tenantId, loaded: sessionLoaded, fetchSession } = useRoleStore()
 
   // Form States
   const [title, setTitle] = useState('')
@@ -64,13 +64,21 @@ export default function ExpensesPage() {
   const [addQty, setAddQty] = useState('')
 
   const fetchData = async () => {
+    if (!tenantId) {
+      setExpenses([])
+      setProducts([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setErrorMessage(null)
-    
-    // 1. Tarik Data Pengeluaran
+
+    // 1. Tarik Data Pengeluaran — selalu dibatasi tenant milik pengguna
     const { data: expData, error: expError } = await supabase
       .from('expenses')
       .select('*')
+      .eq('tenant_id', tenantId)
       .order('expense_date', { ascending: false })
 
     if (expError) {
@@ -84,6 +92,7 @@ export default function ExpensesPage() {
     const { data: prodData } = await supabase
       .from('products')
       .select('id, name, stock, type')
+      .eq('tenant_id', tenantId)
       .eq('type', 'retail')
       .order('name', { ascending: true })
 
@@ -96,8 +105,12 @@ export default function ExpensesPage() {
   }
 
   useEffect(() => {
-    fetchData()
+    fetchSession()
   }, [])
+
+  useEffect(() => {
+    if (sessionLoaded) fetchData()
+  }, [sessionLoaded, tenantId])
 
   // Kamus Pilihan Cepat Operasional (Quick Chips)
   const getQuickOptions = () => {
@@ -116,7 +129,6 @@ export default function ExpensesPage() {
   // Cek apakah kategori yang dipilih adalah Pengadaan Stok
   const isProcurement = category === t.expenses.catRaw || category === 'Bahan Baku / Stok' || category === 'Raw Materials / Stock'
 
-  // Fungsi Simpan yang Super Defensif (4-Lapis Tenant ID & Auto-Stock Update)
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -124,37 +136,13 @@ export default function ExpensesPage() {
     setSuccessMessage(null)
 
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (!user || authError) {
-        setErrorMessage("Sesi login tidak ditemukan. Silakan login ulang.")
+      // tenant_id HANYA boleh berasal dari profil pengguna yang sedang login.
+      // Jangan pernah menebak dari baris lain atau memakai nilai fallback —
+      // itu bisa menulis data ke tenant milik orang lain.
+      if (!tenantId) {
+        setErrorMessage("Akun Anda belum terhubung ke toko mana pun. Silakan login ulang.")
         setIsSubmitting(false)
         return
-      }
-
-      // =========================================================
-      // 4-LAPIS RESOLUSI TENANT ID (DIJAMIN 100% TIDAK ERROR)
-      // =========================================================
-      let tenantId = null
-      
-      // Lapis 1: Cari di user_profiles
-      const { data: profile } = await supabase.from('user_profiles').select('tenant_id').eq('id', user.id).single()
-      if (profile && profile.tenant_id) {
-        tenantId = profile.tenant_id
-      } else {
-        // Lapis 2: Cari di tabel products yang sudah ada
-        const { data: prod } = await supabase.from('products').select('tenant_id').limit(1).single()
-        if (prod && prod.tenant_id) {
-          tenantId = prod.tenant_id
-        } else {
-          // Lapis 3: Cari di tabel tenants
-          const { data: ten } = await supabase.from('tenants').select('id').limit(1).single()
-          if (ten && ten.id) {
-            tenantId = ten.id
-          } else {
-            // Lapis 4: Fallback mutlak untuk lingkungan lokal/dev agar tidak pernah crash
-            tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
-          }
-        }
       }
 
       // =========================================================
@@ -187,6 +175,7 @@ export default function ExpensesPage() {
           .from('products')
           .update({ stock: newStock })
           .eq('id', selectedProductId)
+          .eq('tenant_id', tenantId)
 
         if (stockError) {
           console.error("Stock Update Error:", stockError)
@@ -235,7 +224,7 @@ export default function ExpensesPage() {
       return
     }
     if (confirm('Yakin ingin menghapus catatan biaya ini?')) {
-      await supabase.from('expenses').delete().eq('id', id)
+      await supabase.from('expenses').delete().eq('id', id).eq('tenant_id', tenantId)
       fetchData()
     }
   }
@@ -247,10 +236,10 @@ export default function ExpensesPage() {
   )
 
   return (
-    <div className="p-6 h-full flex flex-col text-[#183022]">
+    <div className="p-6 h-full flex flex-col text-ink">
       
       {errorMessage && !isModalOpen && (
-        <div className="mb-6 bg-[#FDF2F1] border border-[#D37A74] rounded-2xl p-4 text-[#B54D46] text-sm font-medium flex items-center gap-2">
+        <div className="mb-6 bg-tint-danger border border-danger-2 rounded-2xl p-4 text-danger text-sm font-medium flex items-center gap-2">
           <AlertCircle size={18} className="flex-shrink-0" />
           <span>{errorMessage}</span>
         </div>
@@ -258,12 +247,12 @@ export default function ExpensesPage() {
 
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#183022]">{t.expenses.title}</h1>
-          <p className="text-sm text-[#6B8275] mt-1">{t.expenses.subtitle}</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t.expenses.title}</h1>
+          <p className="text-sm text-muted mt-1">{t.expenses.subtitle}</p>
         </div>
         <button 
           onClick={() => { setIsModalOpen(true); setErrorMessage(null); setSuccessMessage(null); }}
-          className="bg-[#183022] hover:bg-[#234330] text-[#F7F5F0] px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-md hover:shadow-lg text-sm"
+          className="bg-ink hover:bg-ink-hi text-on-dark px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition shadow-md hover:shadow-lg text-sm"
         >
           <Plus size={18} />
           <span>{t.expenses.addExpense}</span>
@@ -271,32 +260,32 @@ export default function ExpensesPage() {
       </div>
 
       {/* Kartu Ringkasan Total Pengeluaran */}
-      <div className="mb-6 bg-[#FFFFFF] border border-[#EAE5DA] rounded-3xl p-6 shadow-sm flex items-center justify-between">
+      <div className="mb-6 bg-white border border-line rounded-3xl p-6 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="p-4 bg-[#FBECE6] text-[#C26D46] rounded-2xl">
+          <div className="p-4 bg-tint-expense text-expense rounded-2xl">
             <Wallet size={28} />
           </div>
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#6B8275] block">{t.expenses.totalExpenses}</span>
-            <span className="text-2xl font-extrabold text-[#183022] mt-1 block">{formatRupiah(totalExpenses)}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted block">{t.expenses.totalExpenses}</span>
+            <span className="text-2xl font-extrabold text-ink mt-1 block">{formatRupiah(totalExpenses)}</span>
           </div>
         </div>
-        <span className="text-xs bg-[#F0EBE1] text-[#6B8275] px-3.5 py-1.5 rounded-full font-bold">
+        <span className="text-xs bg-paper text-muted px-3.5 py-1.5 rounded-full font-bold">
           {expenses.length} Catatan Biaya
         </span>
       </div>
 
       {/* Tabel Pengeluaran */}
-      <div className="bg-[#FFFFFF] border border-[#EAE5DA] rounded-3xl shadow-sm flex-1 flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-[#EAE5DA] bg-[#FCFBF9]">
+      <div className="bg-white border border-line rounded-3xl shadow-sm flex-1 flex flex-col overflow-hidden">
+        <div className="p-5 border-b border-line bg-paper-2">
           <div className="relative max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A4B5AC]" size={18} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint" size={18} />
             <input 
               type="text" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t.expenses.searchPlaceholder} 
-              className="w-full pl-10 pr-4 py-2.5 bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl focus:outline-none focus:border-[#2D5A41] text-sm text-[#183022] font-medium transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-line rounded-xl focus:outline-none focus:border-brand text-sm text-ink font-medium transition-all"
             />
           </div>
         </div>
@@ -304,37 +293,37 @@ export default function ExpensesPage() {
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="h-full flex items-center justify-center py-20">
-              <Loader2 className="animate-spin text-[#2D5A41]" size={36} />
+              <Loader2 className="animate-spin text-brand" size={36} />
             </div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center py-16 text-[#A4B5AC] border-2 border-dashed border-[#EAE5DA] rounded-2xl bg-[#FCFBF9]/50">
-              <Wallet size={48} className="mb-3 opacity-40 text-[#6B8275]" />
-              <p className="font-bold text-[#183022] text-base">{t.expenses.empty}</p>
+            <div className="h-full flex flex-col items-center justify-center py-16 text-faint border-2 border-dashed border-line rounded-2xl bg-paper-2/50">
+              <Wallet size={48} className="mb-3 opacity-40 text-muted" />
+              <p className="font-bold text-ink text-base">{t.expenses.empty}</p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-[#EAE5DA]">
-              <thead className="bg-[#FCFBF9] sticky top-0">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-paper-2 sticky top-0">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">{t.expenses.date}</th>
-                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">{t.expenses.description}</th>
-                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">{t.expenses.category}</th>
-                  <th className="px-6 py-4 text-left text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">{t.expenses.amount}</th>
-                  {role === 'owner' && <th className="px-6 py-4 text-right text-xs font-extrabold text-[#6B8275] uppercase tracking-wider">Aksi</th>}
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-muted uppercase tracking-wider">{t.expenses.date}</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-muted uppercase tracking-wider">{t.expenses.description}</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-muted uppercase tracking-wider">{t.expenses.category}</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-muted uppercase tracking-wider">{t.expenses.amount}</th>
+                  {role === 'owner' && <th className="px-6 py-4 text-right text-xs font-extrabold text-muted uppercase tracking-wider">Aksi</th>}
                 </tr>
               </thead>
-              <tbody className="bg-[#FFFFFF] divide-y divide-[#EAE5DA]/60">
+              <tbody className="bg-white divide-y divide-line/60">
                 {filteredExpenses.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#FCFBF9] transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-[#6B8275]">
+                  <tr key={item.id} className="hover:bg-paper-2 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-muted">
                       <div className="flex items-center gap-2">
-                        <Calendar size={15} className="text-[#8C7A5B]" />
+                        <Calendar size={15} className="text-accent-ink" />
                         <span>{item.expense_date}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-bold text-[#183022] text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap font-bold text-ink text-sm">
                       <div className="flex items-center gap-2">
                         {item.title.startsWith('[Pengadaan Stok]') && (
-                          <span className="p-1 bg-[#E8F3ED] text-[#2D5A41] rounded-lg" title="Otomatis menambah stok inventaris">
+                          <span className="p-1 bg-tint text-brand rounded-lg" title="Otomatis menambah stok inventaris">
                             <PackagePlus size={14} />
                           </span>
                         )}
@@ -342,16 +331,16 @@ export default function ExpensesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F4EFE6] text-[#6A5A3C]">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-tint-accent text-accent-deep">
                         <Tag size={13} /> {item.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-extrabold text-[#C26D46] text-base">
+                    <td className="px-6 py-4 whitespace-nowrap font-extrabold text-expense text-base">
                       -{formatRupiah(item.amount)}
                     </td>
                     {role === 'owner' && (
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <button onClick={() => handleDelete(item.id)} className="text-[#A4B5AC] hover:text-[#D37A74] p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => handleDelete(item.id)} className="text-faint hover:text-danger-2 p-1.5 rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -369,26 +358,26 @@ export default function ExpensesPage() {
       {/* ========================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#FFFFFF] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-[#EAE5DA] flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-6 border-b border-[#EAE5DA] bg-[#FCFBF9]">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-line flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b border-line bg-paper-2">
               <div className="flex items-center gap-2">
-                <Wallet className="text-[#2D5A41]" size={22} />
-                <h3 className="font-extrabold text-xl text-[#183022]">{t.expenses.addExpense}</h3>
+                <Wallet className="text-brand" size={22} />
+                <h3 className="font-extrabold text-xl text-ink">{t.expenses.addExpense}</h3>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-[#A4B5AC] hover:text-[#183022]"><X size={22} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-faint hover:text-ink"><X size={22} /></button>
             </div>
             
             <form onSubmit={handleAddExpense} className="p-6 space-y-4 overflow-y-auto">
               
               {errorMessage && (
-                <div className="p-3 bg-[#FDF2F1] border border-[#D37A74] rounded-xl text-xs text-[#B54D46] flex items-center gap-2">
+                <div className="p-3 bg-tint-danger border border-danger-2 rounded-xl text-xs text-danger flex items-center gap-2">
                   <AlertCircle size={16} className="flex-shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               {successMessage && (
-                <div className="p-3 bg-[#E8F3ED] border border-[#B8D8C8] rounded-xl text-xs text-[#2D5A41] flex items-center gap-2 font-bold">
+                <div className="p-3 bg-tint border border-tint-3 rounded-xl text-xs text-brand flex items-center gap-2 font-bold">
                   <CheckCircle2 size={16} className="flex-shrink-0" />
                   <span>{successMessage}</span>
                 </div>
@@ -396,14 +385,14 @@ export default function ExpensesPage() {
 
               {/* 1. Kategori Pengeluaran */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">{t.expenses.category}</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">{t.expenses.category}</label>
                 <select 
                   value={category} 
                   onChange={(e) => {
                     setCategory(e.target.value);
                     setTitle(''); // Reset judul saat ganti kategori
                   }} 
-                  className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-bold focus:outline-none focus:border-[#2D5A41] shadow-sm"
+                  className="w-full bg-white border border-line rounded-xl px-4 py-2.5 text-sm text-ink font-bold focus:outline-none focus:border-brand shadow-sm"
                 >
                   <option value={t.expenses.catOps}>{t.expenses.catOps}</option>
                   <option value={t.expenses.catRaw}>📦 {t.expenses.catRaw} (Direct Inventory)</option>
@@ -414,18 +403,18 @@ export default function ExpensesPage() {
 
               {/* 2. LOGIKA KONDISIONAL: JIKA PENGADAAN STOK VS OPERASIONAL BIASA */}
               {isProcurement ? (
-                <div className="p-3.5 bg-[#E8F3ED]/60 border border-[#B8D8C8] rounded-2xl space-y-3">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#2D5A41]">
+                <div className="p-3.5 bg-tint/60 border border-tint-3 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-brand">
                     <PackagePlus size={16} />
                     <span>Pengadaan & Penambahan Stok Otomatis</span>
                   </div>
                   
                   <div>
-                    <label className="block text-[11px] font-bold text-[#5A6D62] mb-1">Pilih Barang dari Katalog Inventaris</label>
+                    <label className="block text-[11px] font-bold text-muted-2 mb-1">Pilih Barang dari Katalog Inventaris</label>
                     <select 
                       value={selectedProductId} 
                       onChange={(e) => setSelectedProductId(e.target.value)}
-                      className="w-full bg-[#FFFFFF] border border-[#B8D8C8] rounded-xl px-3 py-2 text-xs font-bold text-[#183022] focus:outline-none focus:border-[#2D5A41]"
+                      className="w-full bg-white border border-tint-3 rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none focus:border-brand"
                     >
                       {products.length === 0 ? (
                         <option value="">Katalog Barang Kosong</option>
@@ -438,36 +427,36 @@ export default function ExpensesPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#5A6D62] mb-1">Jumlah Unit Dibeli (Qty)</label>
+                    <label className="block text-[11px] font-bold text-muted-2 mb-1">Jumlah Unit Dibeli (Qty)</label>
                     <input 
                       type="number" 
                       value={addQty} 
                       onChange={(e) => setAddQty(e.target.value)}
                       placeholder="Contoh: 10" 
-                      className="w-full bg-[#FFFFFF] border border-[#B8D8C8] rounded-xl px-3 py-2 text-xs font-extrabold text-[#183022] focus:outline-none focus:border-[#2D5A41]" 
+                      className="w-full bg-white border border-tint-3 rounded-xl px-3 py-2 text-xs font-extrabold text-ink focus:outline-none focus:border-brand" 
                     />
                   </div>
-                  <p className="text-[10px] text-[#5A6D62] italic">
+                  <p className="text-[10px] text-muted-2 italic">
                     *Stok barang yang dipilih akan otomatis bertambah di menu Inventaris setelah disimpan.
                   </p>
                 </div>
               ) : (
                 /* Operasional Biasa: Input Judul + Tombol Pilihan Cepat (Quick Chips) */
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">{t.expenses.description}</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">{t.expenses.description}</label>
                   <input 
                     required 
                     type="text" 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)} 
                     placeholder="Ketik manual atau pilih opsi cepat di bawah..." 
-                    className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41]" 
+                    className="w-full bg-white border border-line rounded-xl px-4 py-2.5 text-sm text-ink font-medium focus:outline-none focus:border-brand" 
                   />
                   
                   {/* Pilihan Cepat (Quick Chips) */}
                   {getQuickOptions().length > 0 && (
                     <div className="mt-2.5">
-                      <span className="text-[10px] font-bold text-[#8C7A5B] flex items-center gap-1 mb-1.5">
+                      <span className="text-[10px] font-bold text-accent-ink flex items-center gap-1 mb-1.5">
                         <Zap size={12} /> Pilihan Cepat (Klik untuk mengisi):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
@@ -478,8 +467,8 @@ export default function ExpensesPage() {
                             onClick={() => setTitle(opt)}
                             className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${
                               title === opt 
-                                ? 'bg-[#183022] text-white border-[#183022] shadow-sm' 
-                                : 'bg-[#FCFBF9] text-[#5A6D62] border-[#EAE5DA] hover:border-[#2D5A41] hover:text-[#183022]'
+                                ? 'bg-ink text-white border-ink shadow-sm' 
+                                : 'bg-paper-2 text-muted-2 border-line hover:border-brand hover:text-ink'
                             }`}
                           >
                             + {opt}
@@ -493,28 +482,28 @@ export default function ExpensesPage() {
 
               {/* 3. Nominal Biaya */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">{t.expenses.amount}</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">{t.expenses.amount}</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A4B5AC]" size={16} />
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" size={16} />
                   <input 
                     required 
                     type="number" 
                     value={amount} 
                     onChange={(e) => setAmount(e.target.value)} 
                     placeholder="Contoh: 250000" 
-                    className="w-full pl-9 pr-4 py-2.5 bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl text-sm text-[#183022] font-extrabold focus:outline-none focus:border-[#2D5A41]" 
+                    className="w-full pl-9 pr-4 py-2.5 bg-white border border-line rounded-xl text-sm text-ink font-extrabold focus:outline-none focus:border-brand" 
                   />
                 </div>
               </div>
 
               {/* 4. Tanggal */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#6B8275] mb-1.5">{t.expenses.date}</label>
-                <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-[#FFFFFF] border border-[#EAE5DA] rounded-xl px-4 py-2.5 text-sm text-[#183022] font-medium focus:outline-none focus:border-[#2D5A41]" />
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">{t.expenses.date}</label>
+                <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-white border border-line rounded-xl px-4 py-2.5 text-sm text-ink font-medium focus:outline-none focus:border-brand" />
               </div>
 
-              <div className="pt-4 border-t border-[#EAE5DA] mt-2">
-                <button type="submit" disabled={isSubmitting} className="w-full bg-[#183022] text-[#F7F5F0] rounded-2xl py-3.5 font-bold hover:bg-[#234330] disabled:opacity-50 flex items-center justify-center shadow-lg transition-all text-sm gap-2">
+              <div className="pt-4 border-t border-line mt-2">
+                <button type="submit" disabled={isSubmitting} className="w-full bg-ink text-on-dark rounded-2xl py-3.5 font-bold hover:bg-ink-hi disabled:opacity-50 flex items-center justify-center shadow-lg transition-all text-sm gap-2">
                   {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (
                     <>
                       <CheckCircle2 size={18} />

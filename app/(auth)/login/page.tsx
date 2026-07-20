@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { 
-  Store, Mail, Lock, Building2, User, ArrowRight, Loader2, 
-  Sparkles, CheckCircle2, ShieldCheck 
+  Store, Mail, Lock, Building2, User, ArrowRight, Loader2,
+  Sparkles, CheckCircle2, ShieldCheck, HelpCircle
 } from 'lucide-react'
 
 export default function UnifiedAuthPage() {
@@ -79,13 +80,13 @@ export default function UnifiedAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0EBE1] flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans text-[#183022]">
+    <div className="min-h-screen bg-paper flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans text-ink">
       
       {/* ========================================================= */}
       {/* AMBIENT BACKGROUND GLOW (Pencerah Kaca Liquid Glass) */}
       {/* ========================================================= */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#2D5A41]/25 to-[#8C7A5B]/20 blur-[140px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-tr from-[#C26D46]/20 to-[#2D5A41]/20 blur-[120px] pointer-events-none z-0" />
+      <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-brand/25 to-accent/20 blur-[140px] pointer-events-none z-0" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-tr from-expense/20 to-brand/20 blur-[120px] pointer-events-none z-0" />
 
       {/* ========================================================= */}
       {/* MAIN SPLIT GLASS CONTAINER */}
@@ -95,7 +96,7 @@ export default function UnifiedAuthPage() {
         {/* --------------------------------------------------------- */}
         {/* KOLOM KIRI: BANNER & SWITCHER (Deep Emerald Glass) */}
         {/* --------------------------------------------------------- */}
-        <div className="w-full md:w-5/12 bg-gradient-to-br from-[#183022] via-[#224230] to-[#183022] text-[#F7F5F0] p-8 md:p-10 flex flex-col justify-between relative overflow-hidden border-b md:border-b-0 md:border-r border-white/10">
+        <div className="w-full md:w-5/12 bg-gradient-to-br from-ink via-ink-hi to-ink text-on-dark p-8 md:p-10 flex flex-col justify-between relative overflow-hidden border-b md:border-b-0 md:border-r border-white/10">
           
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -106,14 +107,14 @@ export default function UnifiedAuthPage() {
             </div>
             <div>
               <span className="text-xl font-black tracking-tight block">SEA ERP</span>
-              <span className="text-[10px] uppercase tracking-widest text-[#93B2A1] font-bold block">SaaS Edition</span>
+              <span className="text-[10px] uppercase tracking-widest text-on-dark-3 font-bold block">SaaS Edition</span>
             </div>
           </div>
 
           {/* Konten Dinamis Banner */}
           <div className="my-8 md:my-auto z-10 space-y-4">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-[#A8C3B3] backdrop-blur-md">
-              <Sparkles size={14} className="text-[#8C7A5B]" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-on-dark-2 backdrop-blur-md">
+              <Sparkles size={14} className="text-accent" />
               <span>{isRegistering ? 'Enterprise POS System' : 'Welcome Back, Owner'}</span>
             </div>
 
@@ -123,7 +124,7 @@ export default function UnifiedAuthPage() {
                 : 'Pantau Performa & Arus Kas Real-Time.'}
             </h2>
             
-            <p className="text-xs md:text-sm text-[#A8C3B3] leading-relaxed font-medium">
+            <p className="text-xs md:text-sm text-on-dark-2 leading-relaxed font-medium">
               {isRegistering
                 ? 'Daftarkan bisnis Anda sekarang untuk membuka seluruh fitur POS, kontrol inventaris, dan laporan laba rugi otomatis.'
                 : 'Masuk kembali ke dasbor kontrol Anda untuk melanjutkan operasional dan analisis finansial harian.'}
@@ -132,7 +133,7 @@ export default function UnifiedAuthPage() {
 
           {/* Switch Mode Button */}
           <div className="z-10 pt-6 border-t border-white/10">
-            <p className="text-xs text-[#93B2A1] mb-2 font-medium">
+            <p className="text-xs text-on-dark-3 mb-2 font-medium">
               {isRegistering ? 'Sudah memiliki akun toko?' : 'Belum mendaftarkan bisnis Anda?'}
             </p>
             <button
@@ -143,6 +144,14 @@ export default function UnifiedAuthPage() {
               <span>{isRegistering ? 'Sign In ke Sistem Sekarang' : 'Buat Akun Bisnis Baru'}</span>
               <ArrowRight size={15} strokeWidth={2} />
             </button>
+
+            <Link
+              href="/kenapa"
+              className="mt-3 w-full py-3 px-4 rounded-xl border border-white/15 hover:bg-white/10 font-bold text-xs transition-all duration-300 flex items-center justify-center gap-2 text-on-dark-2 hover:text-white"
+            >
+              <HelpCircle size={15} strokeWidth={2} />
+              <span>Kenapa Harus Pakai SEA ERP?</span>
+            </Link>
           </div>
 
         </div>
@@ -156,10 +165,10 @@ export default function UnifiedAuthPage() {
             
             {/* Header Form */}
             <div className="mb-6">
-              <h3 className="text-2xl font-black tracking-tight text-[#183022]">
+              <h3 className="text-2xl font-black tracking-tight text-ink">
                 {isRegistering ? 'Create New Account' : 'Sign In to System'}
               </h3>
-              <p className="text-xs text-[#6B8275] font-medium mt-1">
+              <p className="text-xs text-muted font-medium mt-1">
                 {isRegistering 
                   ? 'Lengkapi data di bawah untuk mendirikan tenant baru.' 
                   : 'Masukkan kredensial email bisnis Anda yang terdaftar.'}
@@ -168,13 +177,13 @@ export default function UnifiedAuthPage() {
 
             {/* Error & Success Alerts */}
             {error && (
-              <div className="mb-5 p-3.5 bg-[#FDF2F1] border border-[#B54D46]/30 rounded-xl text-xs text-[#B54D46] font-bold flex items-center gap-2 animate-shake">
+              <div className="mb-5 p-3.5 bg-tint-danger border border-danger/30 rounded-xl text-xs text-danger font-bold flex items-center gap-2 animate-shake">
                 <span>⚠️ {error}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="mb-5 p-4 bg-[#E8F3ED] border border-[#2D5A41]/30 rounded-xl text-xs text-[#2D5A41] font-bold flex items-center gap-2.5 animate-fade-in">
+              <div className="mb-5 p-4 bg-tint border border-brand/30 rounded-xl text-xs text-brand font-bold flex items-center gap-2.5 animate-fade-in">
                 <CheckCircle2 size={18} className="flex-shrink-0" />
                 <span>{successMsg}</span>
               </div>
@@ -187,35 +196,35 @@ export default function UnifiedAuthPage() {
               {isRegistering && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#6B8275] mb-1">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted mb-1">
                       Full Name (Nama Pemilik)
                     </label>
                     <div className="relative">
-                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B8275]" strokeWidth={2} />
+                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" strokeWidth={2} />
                       <input
                         type="text"
                         required={isRegistering}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Contoh: Gemini Assistant"
-                        className="w-full bg-white/80 border border-[#EAE5DA] rounded-xl px-10 py-2.5 text-sm text-[#183022] placeholder:text-[#6B8275]/50 focus:outline-none focus:border-[#2D5A41] focus:ring-2 focus:ring-[#2D5A41]/20 transition-all font-bold"
+                        className="w-full bg-white/80 border border-line rounded-xl px-10 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all font-bold"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#6B8275] mb-1">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-muted mb-1">
                       Business / Company Name
                     </label>
                     <div className="relative">
-                      <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B8275]" strokeWidth={2} />
+                      <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" strokeWidth={2} />
                       <input
                         type="text"
                         required={isRegistering}
                         value={storeName}
                         onChange={(e) => setStoreName(e.target.value)}
                         placeholder="Contoh: Kopi Kenangan Bali"
-                        className="w-full bg-white/80 border border-[#EAE5DA] rounded-xl px-10 py-2.5 text-sm text-[#183022] placeholder:text-[#6B8275]/50 focus:outline-none focus:border-[#2D5A41] focus:ring-2 focus:ring-[#2D5A41]/20 transition-all font-bold"
+                        className="w-full bg-white/80 border border-line rounded-xl px-10 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all font-bold"
                       />
                     </div>
                   </div>
@@ -224,18 +233,18 @@ export default function UnifiedAuthPage() {
 
               {/* INPUT STANDAR: Email */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-[#6B8275] mb-1">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-muted mb-1">
                   Business Email
                 </label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B8275]" strokeWidth={2} />
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" strokeWidth={2} />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@perusahaan.com"
-                    className="w-full bg-white/80 border border-[#EAE5DA] rounded-xl px-10 py-2.5 text-sm text-[#183022] placeholder:text-[#6B8275]/50 focus:outline-none focus:border-[#2D5A41] focus:ring-2 focus:ring-[#2D5A41]/20 transition-all font-bold"
+                    className="w-full bg-white/80 border border-line rounded-xl px-10 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all font-bold"
                   />
                 </div>
               </div>
@@ -243,17 +252,17 @@ export default function UnifiedAuthPage() {
               {/* INPUT STANDAR: Password */}
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#6B8275]">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-muted">
                     Password
                   </label>
                   {!isRegistering && (
-                    <a href="#" className="text-[10px] font-bold text-[#2D5A41] hover:underline">
+                    <Link href="/reset-password" className="text-[10px] font-bold text-brand hover:underline">
                       Lupa password?
-                    </a>
+                    </Link>
                   )}
                 </div>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B8275]" strokeWidth={2} />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" strokeWidth={2} />
                   <input
                     type="password"
                     required
@@ -261,7 +270,7 @@ export default function UnifiedAuthPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Minimal 6 karakter"
-                    className="w-full bg-white/80 border border-[#EAE5DA] rounded-xl px-10 py-2.5 text-sm text-[#183022] placeholder:text-[#6B8275]/50 focus:outline-none focus:border-[#2D5A41] focus:ring-2 focus:ring-[#2D5A41]/20 transition-all font-bold"
+                    className="w-full bg-white/80 border border-line rounded-xl px-10 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all font-bold"
                   />
                 </div>
               </div>
@@ -270,11 +279,11 @@ export default function UnifiedAuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-4 bg-[#183022] hover:bg-[#234330] active:scale-[0.99] text-[#F7F5F0] font-extrabold py-3.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 text-xs tracking-wider uppercase"
+                className="w-full mt-4 bg-ink hover:bg-ink-hi active:scale-[0.99] text-on-dark font-extrabold py-3.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 text-xs tracking-wider uppercase"
               >
                 {loading ? (
                   <>
-                    <Loader2 size={16} className="animate-spin text-[#8C7A5B]" />
+                    <Loader2 size={16} className="animate-spin text-accent" />
                     <span>{isRegistering ? 'Mendaftarkan Tenant...' : 'Memverifikasi Akses...'}</span>
                   </>
                 ) : (
@@ -287,8 +296,8 @@ export default function UnifiedAuthPage() {
             </form>
 
             {/* Security Badge Footer */}
-            <div className="mt-8 pt-6 border-t border-[#EAE5DA] flex items-center justify-center gap-2 text-[11px] font-bold text-[#6B8275]">
-              <ShieldCheck size={16} className="text-[#2D5A41]" />
+            <div className="mt-8 pt-6 border-t border-line flex items-center justify-center gap-2 text-[11px] font-bold text-muted">
+              <ShieldCheck size={16} className="text-brand" />
               <span>256-Bit SSL Encrypted & Multi-Tenant Enterprise Architecture</span>
             </div>
 

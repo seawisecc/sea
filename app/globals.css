@@ -1,7 +1,80 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   SEA ERP — DESIGN TOKENS
+   Tema: "Chalk & Navy"  ·  Anchor: #000066 (deep navy) + #FFFF99 (chalk)
+
+   SEMUA warna aplikasi didefinisikan di sini. Jangan pernah menulis hex
+   langsung di komponen (mis. bg-[#000066]) — pakai token: bg-ink, text-muted,
+   border-line, dsb. Untuk ganti tema, cukup ubah nilai di blok @theme ini.
+   ========================================================================= */
+
+@theme {
+  /* --- Navy: permukaan gelap, teks utama, aksi primer --------------------- */
+  --color-ink: #000066;        /* anchor brand — sidebar, tombol utama, heading */
+  --color-ink-hi: #14147f;     /* state hover dari ink */
+  --color-brand: #2a2a96;      /* aksen navy sekunder, ikon aktif */
+  --color-brand-soft: #4646ad; /* navy paling terang untuk aksen halus */
+
+  /* --- Teks di atas latar terang ----------------------------------------- */
+  --color-muted: #57576e;      /* teks sekunder / label */
+  --color-muted-2: #676781;    /* teks tersier */
+  --color-faint: #9a9ab0;      /* placeholder, ikon nonaktif */
+
+  /* --- Teks di atas latar gelap (sidebar, banner) ------------------------- */
+  --color-on-dark: #fbfbf0;    /* teks utama di atas navy */
+  --color-on-dark-2: #c6c6e8;  /* teks sekunder di atas navy */
+  --color-on-dark-3: #a9a9d8;  /* label di atas navy */
+  --color-on-dark-4: #8484c4;  /* ikon nonaktif di atas navy */
+
+  /* --- Tint navy: badge, bar progres, latar lembut ------------------------ */
+  --color-tint: #eaedff;
+  --color-tint-2: #d8deff;
+  --color-tint-3: #c6ccfa;
+
+  /* --- Permukaan terang & garis ------------------------------------------ */
+  --color-paper: #fafaec;      /* latar halaman (chalk sangat lembut) */
+  --color-paper-2: #fefef7;    /* latar kartu bertingkat / input */
+  --color-line: #e4e4d2;       /* border standar */
+  --color-line-2: #d5d5c0;     /* border tegas / state hover */
+
+  /* --- Chalk: aksen sorotan (owner, premium, indikator aktif) ------------- */
+  --color-accent: #ffff99;     /* anchor chalk — paling hidup di atas navy */
+  --color-accent-ink: #85850a; /* versi terbaca untuk di atas latar terang */
+  --color-accent-deep: #5f5f07;
+  --color-tint-accent: #fbfbdd;
+
+  /* --- Semantik: pengeluaran / jasa --------------------------------------- */
+  --color-expense: #c2410c;
+  --color-expense-deep: #9a3412;
+  --color-tint-expense: #fdede2;
+
+  /* --- Semantik: bahaya / error ------------------------------------------- */
+  --color-danger: #b3261e;
+  --color-danger-2: #dc7a72;
+  --color-danger-3: #ffb4a8; /* varian terbaca di atas latar navy */
+  --color-tint-danger: #fef2f1;
+}
+
 @layer base {
   body {
-    @apply bg-[#F0EBE1] text-[#183022] font-sans antialiased;
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: sea-fade-in 0.2s ease-out both;
+  }
+}
+
+@keyframes sea-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
