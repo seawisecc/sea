@@ -35,6 +35,9 @@ export default function OpengraphImage() {
       >
         {/* Kepala */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          {/* Lambang digambar sebagai SVG, bukan emoji. Emoji di ImageResponse
+              perlu diambil dari CDN saat build dan bisa gagal diam-diam,
+              menghasilkan kotak kosong di gambar pratinjau. */}
           <div
             style={{
               width: 56,
@@ -43,11 +46,23 @@ export default function OpengraphImage() {
               background: CHALK,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 30
+              justifyContent: 'center'
             }}
           >
-            🏪
+            <svg width="32" height="32" viewBox="0 0 64 64">
+              <path
+                d="M14 20h36l4 9a5.5 5.5 0 0 1-5.2 7.2 5.5 5.5 0 0 1-5.2-3.7 5.5 5.5 0 0 1-10.4 0 5.5 5.5 0 0 1-10.4 0 5.5 5.5 0 0 1-5.2 3.7A5.5 5.5 0 0 1 10 29z"
+                fill={NAVY}
+              />
+              <path
+                d="M16 38v12h32V38"
+                fill="none"
+                stroke={NAVY}
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ color: ON_DARK, fontSize: 26, fontWeight: 700, letterSpacing: -0.4 }}>

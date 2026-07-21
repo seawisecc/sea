@@ -4,10 +4,20 @@ import "./globals.css"; // <-- INI SANGAT KRUSIAL AGAR TAILWIND AKTIF
 
 const inter = Inter({ subsets: ["latin"] });
 
-// Dipakai untuk mengubah path relatif (gambar OG, ikon) jadi URL absolut.
-// Perayap WhatsApp dan LinkedIn menolak path relatif, jadi nilai ini wajib
-// benar di produksi. Set NEXT_PUBLIC_SITE_URL di Environment Variables Vercel.
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sea-erp.vercel.app";
+// Dipakai untuk mengubah path relatif (gambar OG) jadi URL absolut. Perayap
+// WhatsApp dan LinkedIn menolak path relatif, dan kalau domainnya salah,
+// gambarnya gagal diambil sehingga pratinjau muncul tanpa gambar.
+//
+// Urutan: nilai yang diset manual > domain produksi Vercel > domain deploy
+// saat ini > localhost. Dengan begini domainnya terdeteksi sendiri, tanpa
+// perlu menebak nama proyek.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "") ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+  "http://localhost:3000";
 
 const title = "Seawise Enterprise Apps — Retail & Service Edition";
 const description =
