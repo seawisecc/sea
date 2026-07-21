@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#000066"/>
+  <!-- Kanopi toko -->
+  <path d="M14 20h36l4 9a5.5 5.5 0 0 1-5.2 7.2 5.5 5.5 0 0 1-5.2-3.7 5.5 5.5 0 0 1-10.4 0 5.5 5.5 0 0 1-10.4 0 5.5 5.5 0 0 1-5.2 3.7A5.5 5.5 0 0 1 10 29z" fill="#FFFF99"/>
+  <!-- Badan bangunan -->
+  <path d="M16 38v12h32V38" fill="none" stroke="#FFFF99" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Pintu -->
+  <rect x="27" y="41" width="10" height="9" rx="1.5" fill="#000066" stroke="#FFFF99" stroke-width="3"/>
+</svg>
