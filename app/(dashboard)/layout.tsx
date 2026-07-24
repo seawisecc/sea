@@ -52,16 +52,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const filteredNav = role ? navigation.filter(item => item.allowedRoles.includes(role)) : []
 
-  // Prioritas menu di layar kecil: yang paling sering dipakai kasir dulu.
-  const MOBILE_PRIORITY = ['/pos', '/inventory', '/history', '/dashboard', '/customers']
-  const mobileNav = [...filteredNav]
-    .sort((a, b) => {
-      const ia = MOBILE_PRIORITY.indexOf(a.href)
-      const ib = MOBILE_PRIORITY.indexOf(b.href)
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
-    })
-    .slice(0, 5)
-
   // Guard sisi klien: kasir yang mengetik URL owner-only langsung dilempar ke POS.
   // Ini hanya kenyamanan UI — proteksi datanya tetap di RLS Supabase.
   useEffect(() => {
@@ -207,33 +197,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="flex-1 overflow-y-auto pb-24 md:pb-0">{children}</main>
 
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm">
-          <nav className="bg-ink/85 backdrop-blur-2xl border border-white/20 rounded-full p-2 shadow-[0_10px_35px_rgba(0,0,0,0.35)] flex items-center justify-around">
-            {/* Menu bawah dibatasi 5 ikon agar tidak berdesakan di layar kecil.
-                Menu selebihnya tetap bisa diakses lewat sidebar di layar lebar. */}
-            {mobileNav.map((item) => {
-              const isActive = pathname === item.href
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-full transition-all duration-300 relative ${
-                    isActive
-                      ? 'bg-gradient-to-r from-white/25 to-white/15 text-white shadow-md border border-white/25 scale-105'
-                      : 'text-on-dark-2 hover:text-white'
-                  }`}
-                >
-                  <Icon size={18} strokeWidth={isActive ? 2.2 : 1.75} className="flex-shrink-0" />
-                  {isActive && (
-                    <span className="text-[11px] font-extrabold tracking-wide text-white animate-fade-in">
-                      {item.name.split(' ')[0]}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </nav>
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md">
+          {/* Seluruh menu ditampilkan; bila tidak muat, bar bisa digeser ke
+              samping. Item aktif otomatis di-scroll ke tengah pandangan.
+              Gradien tipis di tepi kanan/kiri jadi petunjuk masih ada menu lain. */}
+          <div className="relative">
+            <nav className="bg-ink/85 backdrop-blur-2xl border border-white/20 rounded-full p-2 shadow-[0_10px_35px_rgba(0,0,0,0.35)] flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+              {filteredNav.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    ref={(el) => {
+                      // Saat halaman aktif, geser bar supaya menunya kelihatan.
+                      if (el && isActive) {
+                        el.scrollIntoView({ block: 'nearest', inline: 'center' })
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-full transition-colors duration-200 relative flex-shrink-0 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-white/25 to-white/15 text-white shadow-md border border-white/25'
+                        : 'text-on-dark-2 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={isActive ? 2.2 : 1.75} className="flex-shrink-0" />
+                    {isActive && (
+                      <span className="text-[11px] font-extrabold tracking-wide text-white whitespace-nowrap">
+                        {item.name.split(' ')[0]}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            {/* Petunjuk visual bahwa bar bisa digeser */}
+            <div className="pointer-events-none absolute inset-y-2 right-2 w-8 rounded-r-full bg-gradient-to-l from-ink/85 to-transparent" />
+          </div>
         </div>
 
       </div>
