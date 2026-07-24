@@ -29,19 +29,25 @@ export const useSubscriptionStore = create<SubState>((set, get) => ({
       .eq('id', user.id)
       .single()
 
-    const tenantData: any = profile?.tenants
+    const tenantData: any = Array.isArray(profile?.tenants)
+      ? profile?.tenants[0]
+      : profile?.tenants
     let effectivePlan: SubPlan = tenantData?.subscription_plan === 'pro' ? 'pro' : 'free'
 
-    // Cek apakah masa Pro sudah habis
+    // Cek apakah masa Pro sudah habis. Ini murni penilaian di sisi klien —
+    // JANGAN menulis balik ke database. Fungsi baca yang mengubah data itu
+    // berbahaya: dengan perbandingan tengah-malam-UTC, satu kali buka dashboard
+    // di hari terakhir bisa menurunkan akun Pro yang seharusnya masih aktif,
+    // dan admin pun ikut melihatnya sebagai free.
+    //
+    // Berakhirnya langganan dihitung sampai AKHIR hari tanggal tersebut, bukan
+    // tengah malamnya, supaya "berlaku sampai 1 Agustus" berarti sepanjang
+    // tanggal 1, bukan berhenti saat 1 Agustus pukul 00:00.
     if (effectivePlan === 'pro' && tenantData?.subscription_ends_at) {
       const endsAt = new Date(tenantData.subscription_ends_at)
+      endsAt.setHours(23, 59, 59, 999)
       if (endsAt < new Date()) {
         effectivePlan = 'free'
-        // Self-heal: update database supaya konsisten dengan tampilan admin
-        await supabase
-          .from('tenants')
-          .update({ subscription_plan: 'free' })
-          .eq('id', profile?.tenant_id)
       }
     }
 
